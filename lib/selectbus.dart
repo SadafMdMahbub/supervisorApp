@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supervisor/homepage.dart';
 
+/// A page where the supervisor selects their assigned bus for the current session.
+/// It fetches the list of assigned buses from local storage and displays them.
 class SelectBusPage extends StatefulWidget {
   const SelectBusPage({super.key});
 
@@ -10,18 +12,22 @@ class SelectBusPage extends StatefulWidget {
   State<SelectBusPage> createState() => _SelectBusPageState();
 }
 
+/// The state class for the [SelectBusPage], managing its UI and data.
 class _SelectBusPageState extends State<SelectBusPage> {
   String? _userName;
   List<dynamic> _buses = [];
   String? _selectedBusId;
   final _storage = const FlutterSecureStorage();
 
+  /// Initializes the state and loads the necessary data from secure storage.
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
+  /// Loads the supervisor's name and the list of assigned buses from secure storage.
+  /// It updates the UI with the fetched data.
   Future<void> _loadData() async {
     final userName = await _storage.read(key: 'user_name');
     final assignedBusesJson = await _storage.read(key: 'assigned_buses');
@@ -40,6 +46,8 @@ class _SelectBusPageState extends State<SelectBusPage> {
     }
   }
 
+  /// Saves the selected bus ID to secure storage and navigates to the [HomePage].
+  /// It removes the navigation history so the user cannot go back to this page.
   void _navigateToHome() async {
     if (_selectedBusId != null) {
       await _storage.write(key: 'bus_id', value: _selectedBusId);
@@ -57,6 +65,7 @@ class _SelectBusPageState extends State<SelectBusPage> {
     }
   }
 
+  /// Builds the user interface for the bus selection page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,6 +156,8 @@ class _SelectBusPageState extends State<SelectBusPage> {
   }
 }
 
+/// A reusable widget that displays the details of a single bus in a card format.
+/// It allows the user to select a bus.
 class BusCard extends StatelessWidget {
   final Map<String, dynamic> bus;
   final bool isSelected;
@@ -159,6 +170,7 @@ class BusCard extends StatelessWidget {
     required this.onSelect,
   });
 
+  /// Builds the user interface for the bus card.
   @override
   Widget build(BuildContext context) {
     final busNumber = bus['bus_number'] ?? 'N/A';

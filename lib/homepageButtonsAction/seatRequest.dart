@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:supervisor/api_config.dart';
 
+/// A page that displays a list of pending seat booking requests.
+/// Supervisors can accept or reject these requests.
 class SeatRequestPage extends StatefulWidget {
   const SeatRequestPage({super.key});
 
@@ -13,24 +15,26 @@ class SeatRequestPage extends StatefulWidget {
   _SeatRequestPageState createState() => _SeatRequestPageState();
 }
 
+/// The state class for the [SeatRequestPage], managing its UI and data.
 class _SeatRequestPageState extends State<SeatRequestPage> {
   List<dynamic> _requests = [];
   bool _isLoading = true;
-  String? _errorMessage; // Use a dedicated string for error messages
+  String? _errorMessage;
   final _storage = const FlutterSecureStorage();
 
-  // Completer for robust pull-to-refresh functionality
   Completer<void>? _refreshCompleter;
 
+  /// Initializes the state and triggers the initial fetch of booking requests.
   @override
   void initState() {
     super.initState();
     _fetchBookingRequests();
   }
 
+  /// Fetches booking requests from the API for the current bus.
+  /// It handles authentication, loading states, and error messages.
   Future<void> _fetchBookingRequests() async {
     if (!mounted) return;
-    // Reset state before fetching
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -55,14 +59,11 @@ class _SeatRequestPageState extends State<SeatRequestPage> {
         headers: {'Authorization': 'Bearer $authToken'},
       ).timeout(const Duration(seconds: 15));
 
-      // --- MODIFIED: Added detailed logging for the API response ---
       debugPrint('--------------------------------------------------');
       debugPrint('Seat Request API Status Code: ${response.statusCode}');
       debugPrint('Seat Request API Response Body:');
-      // This will print the raw JSON string to your console.
       debugPrint(response.body);
       debugPrint('--------------------------------------------------');
-
 
       if (mounted) {
         if (response.statusCode == 200) {
@@ -98,12 +99,15 @@ class _SeatRequestPageState extends State<SeatRequestPage> {
     }
   }
 
+  /// Enables pull-to-refresh functionality by re-fetching booking requests.
   Future<void> _handleRefresh() {
     _refreshCompleter = Completer<void>();
     _fetchBookingRequests();
     return _refreshCompleter!.future;
   }
 
+  /// Saves the result of an accepted or rejected request to local secure storage.
+  /// This creates a history of actions taken by the supervisor.
   Future<void> _saveRequestHistory(String bookingId, String status,
       {Map<String, dynamic>? passengerDetails}) async {
     try {
@@ -128,6 +132,8 @@ class _SeatRequestPageState extends State<SeatRequestPage> {
     }
   }
 
+  /// Handles the supervisor's action to either accept or reject a booking request.
+  /// It sends the appropriate API call and updates the UI upon completion.
   Future<void> _handleRequest(String bookingId, bool accept) async {
     final url = accept ? ApiConfig.acceptBooking : ApiConfig.rejectBooking;
     final status = accept ? 'accepted' : 'rejected';
@@ -165,6 +171,7 @@ class _SeatRequestPageState extends State<SeatRequestPage> {
     }
   }
 
+  /// Formats an ISO 8601 date-time string into a more readable format.
   String _formatRequestTime(String isoDateTime) {
     try {
       final dateTime = DateTime.parse(isoDateTime);
@@ -174,6 +181,8 @@ class _SeatRequestPageState extends State<SeatRequestPage> {
     }
   }
 
+  /// Builds the main body of the widget, displaying loading indicators,
+  /// error messages, or the list of booking requests.
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -265,6 +274,7 @@ class _SeatRequestPageState extends State<SeatRequestPage> {
     );
   }
 
+  /// Builds the main scaffold and app bar for the Seat Request page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(

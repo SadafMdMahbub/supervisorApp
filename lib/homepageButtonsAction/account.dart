@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supervisor/login.dart';
 
+/// A page that displays the current supervisor's account details,
+/// including their name, phone number, and a list of assigned buses.
+/// It also provides a way to log out.
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
@@ -10,35 +13,45 @@ class AccountPage extends StatefulWidget {
   State<AccountPage> createState() => _AccountPageState();
 }
 
+/// The state class for the [AccountPage], managing its UI and data.
 class _AccountPageState extends State<AccountPage> {
   final _storage = const FlutterSecureStorage();
   String? _userName;
   String? _userPhone;
   List<dynamic> _assignedBuses = [];
 
+  /// Initializes the state and triggers the loading of user data from secure storage.
   @override
   void initState() {
     super.initState();
     _loadUserData();
   }
 
+  /// Loads the supervisor's name, phone number, and assigned buses from secure storage.
+  /// It updates the UI with the fetched data.
   Future<void> _loadUserData() async {
     final userName = await _storage.read(key: 'user_name');
     final userPhone = await _storage.read(key: 'user_phone');
     final assignedBusesJson = await _storage.read(key: 'assigned_buses');
 
     if (assignedBusesJson != null) {
-      setState(() {
-        _assignedBuses = json.decode(assignedBusesJson);
-      });
+      if (mounted) {
+        setState(() {
+          _assignedBuses = json.decode(assignedBusesJson);
+        });
+      }
     }
 
-    setState(() {
-      _userName = userName;
-      _userPhone = userPhone;
-    });
+    if (mounted) {
+      setState(() {
+        _userName = userName;
+        _userPhone = userPhone;
+      });
+    }
   }
 
+  /// Handles the logout process by deleting all data from secure storage
+  /// and navigating the user back to the [Login] page.
   Future<void> _logout() async {
     await _storage.deleteAll();
     if (mounted) {
@@ -49,6 +62,7 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  /// A helper widget to build a consistent row for displaying a title and a value.
   Widget _buildDetailRow(String title, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -63,6 +77,7 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  /// Builds the user interface for the account page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,7 +117,6 @@ class _AccountPageState extends State<AccountPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            //_buildDetailRow('Bus ID:', bus['bus_id']?.toString() ?? 'N/A'),
                             _buildDetailRow('Bus Number:', bus['bus_number'] ?? 'N/A'),
                             _buildDetailRow('Bus Route:', '${bus['route_from'] ?? ''} to ${bus['route_to'] ?? ''}'),
                             _buildDetailRow('Departure:', bus['departure_time'] ?? 'N/A'),

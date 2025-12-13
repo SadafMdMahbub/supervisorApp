@@ -4,6 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:supervisor/api_config.dart';
 
+/// A page that provides an overview of the bus's seat and revenue status.
+/// It displays details such as total seats, available seats, and total revenue.
 class SeatManagementPage extends StatefulWidget {
   const SeatManagementPage({super.key});
 
@@ -11,18 +13,22 @@ class SeatManagementPage extends StatefulWidget {
   State<SeatManagementPage> createState() => _SeatManagementPageState();
 }
 
+/// The state class for the [SeatManagementPage], managing its UI and data.
 class _SeatManagementPageState extends State<SeatManagementPage> {
   bool _isLoading = true;
   String _errorMessage = '';
   Map<String, dynamic>? _busDetails;
   Map<String, dynamic>? _ticketReport;
 
+  /// Initializes the state and triggers the initial data fetch.
   @override
   void initState() {
     super.initState();
     _fetchData();
   }
 
+  /// Fetches both bus details and the ticket report concurrently from the API.
+  /// It manages loading states and handles any errors that occur.
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
@@ -34,7 +40,6 @@ class _SeatManagementPageState extends State<SeatManagementPage> {
         throw Exception('Authentication details not found. Please log in again.');
       }
 
-      // Fetch both data points concurrently.
       final results = await Future.wait([
         _fetchBusDetails(busId, authToken),
         _fetchTicketReport(busId, authToken),
@@ -57,6 +62,7 @@ class _SeatManagementPageState extends State<SeatManagementPage> {
     }
   }
 
+  /// Fetches the details for a specific bus from the API.
   Future<Map<String, dynamic>> _fetchBusDetails(String busId, String authToken) async {
     final uri = Uri.parse(ApiConfig.busById(busId));
     final response = await http.get(uri, headers: {'Authorization': 'Bearer $authToken'});
@@ -67,18 +73,19 @@ class _SeatManagementPageState extends State<SeatManagementPage> {
     }
   }
 
+  /// Fetches the ticket report for a specific bus from the API.
   Future<Map<String, dynamic>> _fetchTicketReport(String busId, String authToken) async {
     final uri = Uri.parse(ApiConfig.ownerTickets).replace(queryParameters: {'bus_id': busId});
     final response = await http.get(uri, headers: {'Authorization': 'Bearer $authToken'});
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      // The API returns a list, we take the first (and only) item for the specific bus.
       return data['breakdown_by_bus'].isNotEmpty ? data['breakdown_by_bus'][0] : {};
     } else {
       throw Exception('Failed to load ticket reports: ${response.statusCode}');
     }
   }
 
+  /// Builds the user interface for the seat management page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,6 +124,7 @@ class _SeatManagementPageState extends State<SeatManagementPage> {
     );
   }
 
+  /// Builds the card that displays the bus information.
   Widget _buildBusInfoCard() {
     final busNumber = _busDetails?['bus_number'] ?? 'N/A';
     final routeFrom = _busDetails?['route_from'] ?? 'N/A';
@@ -155,6 +163,7 @@ class _SeatManagementPageState extends State<SeatManagementPage> {
     );
   }
 
+  /// A helper widget to create a consistent row for displaying a label and a value.
   Widget _buildInfoRow(String label, String value, {bool isHeader = false, TextAlign textAlign = TextAlign.start}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

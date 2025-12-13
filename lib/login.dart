@@ -6,7 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:supervisor/api_config.dart';
 import 'package:supervisor/selectbus.dart';
 
-// ===== CUSTOM TEXTEDITINGCONTROLLER FOR PHONE NUMBER =====
+/// A custom [TextEditingController] designed for handling phone numbers with a fixed prefix.
+/// It ensures the prefix is always present and handles cursor placement.
 class PhoneNumberController extends TextEditingController {
   final String prefix;
 
@@ -14,28 +15,26 @@ class PhoneNumberController extends TextEditingController {
     text = prefix;
   }
 
+  /// Overridden to ensure the prefix is always at the start of the text.
   @override
   set text(String newText) {
-    // Ensure the prefix is always at the start
     if (!newText.startsWith(prefix)) {
       super.text = prefix;
     } else {
       super.text = newText;
     }
-    // Keep the cursor at the end
     moveCursorToEnd();
   }
 
+  /// Overridden to control the text value and selection, preventing prefix deletion.
   @override
   set value(TextEditingValue newValue) {
     var newText = newValue.text;
 
-    // Prevent deleting the prefix
     if (newText.length < prefix.length || !newText.startsWith(prefix)) {
       newText = prefix;
     }
 
-    // Move cursor to the end if it's inside the prefix
     int newSelectionStart = newValue.selection.start;
     if (newSelectionStart < prefix.length) {
       newSelectionStart = newText.length;
@@ -47,16 +46,16 @@ class PhoneNumberController extends TextEditingController {
     );
   }
 
+  /// Moves the cursor to the end of the text field.
   void moveCursorToEnd() {
     selection = TextSelection.fromPosition(TextPosition(offset: text.length));
   }
 
-  // Getter to return only the digits entered by the user
+  /// A getter to retrieve only the numeric part of the phone number, without the prefix.
   String get number => text.substring(prefix.length);
 }
-// ========================================================
 
-
+/// The [Login] page widget, which is a [StatefulWidget] to handle dynamic state changes.
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -64,16 +63,17 @@ class Login extends StatefulWidget {
   State<Login> createState() => _LoginState();
 }
 
+/// The state class for the [Login] page, containing the UI and business logic.
 class _LoginState extends State<Login> {
-  // Use the new custom controller
   final PhoneNumberController _phoneController =
-  PhoneNumberController(prefix: '+880'); // Note: Space removed for better logic
+  PhoneNumberController(prefix: '+880');
 
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   final _storage = const FlutterSecureStorage();
 
+  /// Cleans up the controllers when the widget is removed from the widget tree.
   @override
   void dispose() {
     _phoneController.dispose();
@@ -81,17 +81,17 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
+  /// Handles the login process by sending a request to the API.
+  /// It validates user input, manages loading states, and handles navigation.
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Get the phone number correctly (prefix + user input)
       final phone = _phoneController.text;
       final password = _passwordController.text;
 
-      // Basic validation
       if (_phoneController.number.length < 10) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -104,9 +104,6 @@ class _LoginState extends State<Login> {
       final url = Uri.parse(ApiConfig.login);
       final requestBody = {'phone': phone, 'password': password};
 
-      print('--- Calling API: POST ${url.toString()} ---');
-      print('--- With Body: ${json.encode(requestBody)} ---');
-
       final response = await http
           .post(
         url,
@@ -114,10 +111,6 @@ class _LoginState extends State<Login> {
         body: json.encode(requestBody),
       )
           .timeout(const Duration(seconds: 10));
-
-      print('--- Response: ${response.statusCode} ---');
-      print(response.body);
-      print('------------------------------------');
 
       if (!mounted) return;
 
@@ -144,14 +137,10 @@ class _LoginState extends State<Login> {
                   key: 'assigned_buses', value: assignedBusesJson);
             }
 
-            print('Login successful! Navigating to Bus Selection.');
-
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (context) => const SelectBusPage()),
             );
           } else {
-            print(
-                'Login failed: Access token is missing from server response.');
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                   content: Text(
@@ -159,7 +148,6 @@ class _LoginState extends State<Login> {
             );
           }
         } else {
-          print('Login failed: Role is not supervisor.');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Only supervisors can log in.')),
           );
@@ -172,14 +160,13 @@ class _LoginState extends State<Login> {
             errorMessage = errorData['message'];
           }
         } catch (e) {
-          print('Could not parse error JSON: $e');
+          // Ignore if parsing fails
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
-      print('Login error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -195,6 +182,7 @@ class _LoginState extends State<Login> {
     }
   }
 
+  /// Builds the user interface for the login page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,24 +237,16 @@ class _LoginState extends State<Login> {
                       color: Colors.grey[600],
                     ),
                     const SizedBox(height: 20),
-
-                    // ===== MODIFIED PHONE TEXTFIELD =====
                     TextField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       textAlign: TextAlign.center,
-                      // Now this will center everything
                       inputFormatters: [
-                        // The length includes the prefix '+880' (4 chars) + 10 digits
                         LengthLimitingTextInputFormatter(14),
-                        // FilteringTextInputFormatter.digitsOnly, // <-- THIS WAS THE PROBLEM
                       ],
                       decoration: InputDecoration(
-                        // REMOVED prefixText from here
                         hintText: 'Enter phone',
-                        // Hint will disappear once typing starts
-                        hintStyle: TextStyle(color: Colors.white.withOpacity(
-                            0.7)),
+                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                         filled: true,
                         fillColor: Colors.black,
                         contentPadding: const EdgeInsets.symmetric(
@@ -278,8 +258,6 @@ class _LoginState extends State<Login> {
                       ),
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
-                    // ===================================
-
                     const SizedBox(height: 16),
                     TextField(
                       controller: _passwordController,

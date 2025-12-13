@@ -8,6 +8,8 @@ import 'package:supervisor/api_config.dart';
 import 'package:supervisor/appstate.dart';
 import 'package:supervisor/homepageButtonsAction/managebus2.dart';
 
+/// A page that displays the details of a selected bus before the supervisor starts the journey.
+/// It fetches bus information from the API and provides the option to start the trip.
 class ManageBusPage extends StatefulWidget {
   final int busId;
   const ManageBusPage({super.key, required this.busId});
@@ -16,18 +18,22 @@ class ManageBusPage extends StatefulWidget {
   State<ManageBusPage> createState() => _ManageBusPageState();
 }
 
+/// The state class for the [ManageBusPage], managing its UI and data.
 class _ManageBusPageState extends State<ManageBusPage> {
   Map<String, dynamic>? _busDetails;
   bool _isLoading = true;
   String? _error;
   final _storage = const FlutterSecureStorage();
 
+  /// Initializes the state and triggers the fetching of bus details.
   @override
   void initState() {
     super.initState();
     _fetchBusDetails();
   }
 
+  /// Fetches the details of the selected bus from the API.
+  /// It handles authentication, loading states, and various error conditions.
   Future<void> _fetchBusDetails() async {
     try {
       final String? authToken = await _storage.read(key: 'access_token');
@@ -44,14 +50,10 @@ class _ManageBusPageState extends State<ManageBusPage> {
 
       final url = Uri.parse('${ApiConfig.baseUrl}/buses/${widget.busId}');
       
-      print('--- Calling API: GET ${url.toString()} ---');
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization': 'Bearer $authToken',
       });
-      print('--- Response: ${response.statusCode} ---');
-      print(response.body);
-      print('------------------------------------');
 
       if (response.statusCode == 200) {
         if (mounted) {
@@ -75,7 +77,6 @@ class _ManageBusPageState extends State<ManageBusPage> {
         }
       }
     } catch (e) {
-      print('Error fetching bus details: $e');
       if (mounted) {
         setState(() {
           _error = 'An error occurred: $e';
@@ -85,6 +86,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
     }
   }
 
+  /// Formats a date-time string into a more readable format (e.g., 'Jan 1, 2023, 05:30 PM').
   String _formatDateTime(String? dateTimeString) {
     if (dateTimeString == null) return 'N/A';
     try {
@@ -95,6 +97,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
     }
   }
 
+  /// Builds the user interface for the manage bus page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,7 +138,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: (_busDetails == null) ? null : () { // Disable button if details failed to load
+                onPressed: (_busDetails == null) ? null : () { 
                   context.read<AppState>().startJourney(context);
                   Navigator.pushReplacement(
                     context,
@@ -144,7 +147,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF8BC34A),
-                  disabledBackgroundColor: Colors.grey, // Style for disabled button
+                  disabledBackgroundColor: Colors.grey, 
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
@@ -157,6 +160,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
     );
   }
 
+  /// Builds the widget that displays the detailed information of the bus.
   Widget _buildBusInfo() {
     if (_busDetails == null) return const Center(child: Text('No bus details available.'));
     final String routeFrom = _busDetails!['route_from'] ?? 'N/A';
@@ -179,6 +183,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
     );
   }
 
+  /// A helper widget to create a consistent row for displaying a label and a value.
   Widget _buildInfoRow(String label, String value) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label, style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w500)),
@@ -187,6 +192,7 @@ class _ManageBusPageState extends State<ManageBusPage> {
     ]);
   }
 
+  /// A helper widget to create a column for displaying a label and a value, with alignment options.
   Widget _buildInfoColumn(String label, String value, {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
     return Column(crossAxisAlignment: crossAxisAlignment, children: [
       Text(label, style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w500)),

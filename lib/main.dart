@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:supervisor/appstate.dart'; // Import the AppState
 import 'package:supervisor/splash_screen.dart'; // Your initial screen
 
+/// The main entry point of the application.
+/// It sets up the root widget and initializes the [AppState] provider.
 void main() {
   runApp(
     // ChangeNotifierProvider creates and provides an instance of AppState
@@ -14,6 +16,8 @@ void main() {
   );
 }
 
+/// The root widget of the application.
+/// It sets up the [MaterialApp] and defines the initial route and theme.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

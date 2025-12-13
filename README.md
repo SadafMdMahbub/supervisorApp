@@ -27,29 +27,7 @@ Our supervisor app.
 6.  **Manage Bus/Journey Page:**
     *   **Functionality:** Allows the supervisor to end the bus's journey, add boarding point, including updating its live location.
 
-## Getting Started
 
-This project is a Flutter application. To get started, you'''ll need to have Flutter installed. You can find instructions on how to install Flutter [here](https://docs.flutter.dev/get-started/install).
-
-Once you have Flutter installed, you can clone this repository and run the following command to install the dependencies:
-
-```bash
-flutter pub get
-```
-
-Then, you can run the app using:
-
-```bash
-flutter run
-```
-
-## Features
-
-* (Please add a list of your app'''s features here)
-
-## Dependencies
-
-This project uses the following dependencies:
 
 * [flutter](https://flutter.dev/)
 * [lottie](https://pub.dev/packages/lottie)

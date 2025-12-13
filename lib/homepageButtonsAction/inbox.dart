@@ -21,12 +21,16 @@ class _InboxPageState extends State<InboxPage> {
 
   Completer<void>? _refreshCompleter;
 
+  /// Initializes the state of the widget when it is first created.
+  /// It triggers the initial fetch of booking requests.
   @override
   void initState() {
     super.initState();
     _fetchBookingRequests();
   }
 
+  /// Fetches booking requests from the API for the current bus.
+  /// It handles authentication, loading states, and error messages.
   Future<void> _fetchBookingRequests() async {
     if (!mounted) return;
     setState(() {
@@ -64,7 +68,7 @@ class _InboxPageState extends State<InboxPage> {
           final decodedBody = json.decode(response.body);
           if (decodedBody is List) {
             setState(() {
-              _requests = decodedBody.where((req) => req['status'] == 'accepted').toList();
+              _requests = decodedBody;
             });
           } else {
             throw Exception('API response is not in the expected list format.');
@@ -92,12 +96,79 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
+  /// Enables pull-to-refresh functionality by re-fetching booking requests.
   Future<void> _handleRefresh() {
     _refreshCompleter = Completer<void>();
     _fetchBookingRequests();
     return _refreshCompleter!.future;
   }
 
+  /// Saves the result of an accepted or rejected request to local secure storage.
+  /// This creates a history of actions taken by the supervisor.
+  Future<void> _saveRequestHistory(String bookingId, String status,
+      {Map<String, dynamic>? passengerDetails}) async {
+    try {
+      final supervisorId = await _storage.read(key: 'user_id');
+      if (supervisorId == null) return;
+
+      final historyKey = 'inbox_history_$supervisorId';
+      final existingHistory = await _storage.read(key: historyKey) ?? '[]';
+      List<dynamic> history = json.decode(existingHistory);
+
+      history.insert(0, {
+        'requestId': bookingId,
+        'status': status,
+        'timestamp': DateTime.now().toIso8601String(),
+        'passenger': passengerDetails,
+      });
+
+      if (history.length > 50) history = history.sublist(0, 50);
+      await _storage.write(key: historyKey, value: json.encode(history));
+    } catch (e) {
+      debugPrint("Error saving request history: $e");
+    }
+  }
+
+  /// Handles the supervisor's action to either accept or reject a booking request.
+  /// It sends the appropriate API call and updates the UI upon completion.
+  Future<void> _handleRequest(String bookingId, bool accept) async {
+    final url = accept ? ApiConfig.acceptBooking : ApiConfig.rejectBooking;
+    final status = accept ? 'accepted' : 'rejected';
+
+    try {
+      final authToken = await _storage.read(key: 'access_token');
+      final response = await http.post(Uri.parse(url), headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      }, body: json.encode({'booking_id': bookingId}));
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final passengerDetails = responseData['passenger'] as Map<
+            String,
+            dynamic>?;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Request $status successfully!')));
+        }
+        await _saveRequestHistory(
+            bookingId, status, passengerDetails: passengerDetails);
+        await _fetchBookingRequests();
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(
+            'Failed to update request: ${error['detail'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  /// Formats an ISO 8601 date-time string into a more readable format.
   String _formatRequestTime(String isoDateTime) {
     try {
       final dateTime = DateTime.parse(isoDateTime);
@@ -107,6 +178,9 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
+
+  /// Builds the main body of the widget, displaying loading indicators,
+  /// error messages, or the list of booking requests.
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -137,7 +211,7 @@ class _InboxPageState extends State<InboxPage> {
 
     if (_requests.isEmpty) {
       return const Center(child: Text(
-          'No accepted seat requests.', textAlign: TextAlign.center));
+          'No pending seat requests.', textAlign: TextAlign.center));
     }
 
     return ListView.builder(
@@ -158,9 +232,42 @@ class _InboxPageState extends State<InboxPage> {
               Text('ID:${request['id']}', style: const TextStyle(
                   fontWeight: FontWeight.bold, fontSize: 18)),
               const SizedBox(height: 8),
-              Text('Request Time: ${_formatRequestTime(request['request_time'])}',
+              Text('Request Time: ${_formatRequestTime(
+                  request['request_time'])}',
                   style: const TextStyle(fontSize: 16)),
+               const SizedBox(height: 8),
+              Text('Status: ${request['status']}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
+              if (request['status'] == 'pending')
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () =>
+                          _handleRequest(request['id'].toString(), false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text(
+                          'REJECT', style: TextStyle(color: Colors.white)),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () =>
+                          _handleRequest(request['id'].toString(), true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text(
+                          'ACCEPT', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
             ],
           ),
         );
@@ -168,6 +275,7 @@ class _InboxPageState extends State<InboxPage> {
     );
   }
 
+  /// Builds the main scaffold and app bar for the Inbox page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -184,6 +292,17 @@ class _InboxPageState extends State<InboxPage> {
           Text('Inbox', style: TextStyle(
               color: Colors.black, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.call, color: Colors.black),
+            onPressed: () {
+              // Dummy action for the call button
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Call button pressed (for show).'))
+              );
+            },
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,

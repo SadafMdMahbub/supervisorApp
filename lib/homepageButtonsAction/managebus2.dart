@@ -9,6 +9,8 @@ import 'package:supervisor/homepage.dart';
 import 'package:supervisor/homepageButtonsAction/addBoardingpoint.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// A page that displays the live location of the bus on a map after the journey has started.
+/// It allows the supervisor to add new boarding points and end the journey.
 class ManageBus2Page extends StatefulWidget {
   final String busName;
   const ManageBus2Page({super.key, this.busName = "BUS LOCATION"});
@@ -17,6 +19,7 @@ class ManageBus2Page extends StatefulWidget {
   State<ManageBus2Page> createState() => _ManageBus2PageState();
 }
 
+/// The state class for the [ManageBus2Page], managing the map, location updates, and UI.
 class _ManageBus2PageState extends State<ManageBus2Page> {
   final MapController _mapController = MapController();
   StreamSubscription<Position>? _positionStreamSubscription;
@@ -25,12 +28,15 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
   final _storage = const FlutterSecureStorage();
   final AddBoardingPointService _addBoardingPointService = AddBoardingPointService();
 
+  /// Initializes the state and starts listening for live location updates.
   @override
   void initState() {
     super.initState();
     _startLiveLocationUpdates();
   }
 
+  /// Subscribes to the device's position stream to get real-time location updates.
+  /// The map is moved to the new location as updates are received.
   void _startLiveLocationUpdates() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -41,7 +47,6 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
       
       final newLocation = LatLng(position.latitude, position.longitude);
 
-      // Only update state and move map if the location has actually changed.
       if (_currentLocation == null || 
           _currentLocation!.latitude != newLocation.latitude || 
           _currentLocation!.longitude != newLocation.longitude) {
@@ -50,7 +55,6 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
           _currentLocation = newLocation;
         });
 
-        // **FIX:** Only move the map if it has been rendered.
         if (_isMapReady) {
           _mapController.move(newLocation, _mapController.camera.zoom);
         }
@@ -58,12 +62,14 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     });
   }
 
+  /// Cleans up resources by canceling the location stream subscription when the widget is disposed.
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
     super.dispose();
   }
 
+  /// Ends the current journey, stops location tracking, and navigates back to the [HomePage].
   void _endJourneyAndGoHome() {
     context.read<AppState>().endJourney();
     Navigator.of(context).pushAndRemoveUntil(
@@ -72,6 +78,7 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     );
   }
 
+  /// Shows a dialog to the supervisor to add a new boarding point by entering its name.
   Future<void> _showAddBoardingPointDialog() async {
     final stopNameController = TextEditingController();
     final stopName = await showDialog<String>(
@@ -130,6 +137,8 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     }
   }
 
+  /// Calls the service to add the new boarding point to the system.
+  /// It shows a confirmation or error message to the user.
   Future<void> _addBoardingPoint(String name) async {
     final authToken = await _storage.read(key: 'access_token');
     final busId = await _storage.read(key: 'bus_id');
@@ -154,6 +163,7 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     }
   }
 
+  /// Builds the user interface for the live location tracking page.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,6 +178,7 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     );
   }
 
+  /// Builds the app bar for the page.
    AppBar _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
@@ -185,6 +196,7 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     );
   }
 
+  /// Builds the button that allows the supervisor to add a new boarding point.
   Widget _buildAddBoardingPointButton() {
     return Container(
       width: double.infinity,
@@ -202,6 +214,7 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     );
   }
 
+  /// Builds the map widget that displays the bus's current location.
   Widget _buildMap() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -215,7 +228,6 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
                   initialCenter: _currentLocation!,
                   initialZoom: 16.0,
                   onMapReady: () {
-                    // **FIX:** Signal that the map is now ready to be controlled.
                     setState(() {
                       _isMapReady = true;
                     });
@@ -241,6 +253,7 @@ class _ManageBus2PageState extends State<ManageBus2Page> {
     );
   }
 
+  /// Builds the button that allows the supervisor to end the journey.
   Widget _buildEndJourneyButton() {
     return Container(
       width: double.infinity,

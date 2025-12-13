@@ -13,6 +13,8 @@ import 'package:supervisor/homepageButtonsAction/seatManagement.dart';
 import 'package:supervisor/homepageButtonsAction/seatRequest.dart';
 import 'package:supervisor/homepageButtonsAction/inbox.dart';
 
+/// The main dashboard of the application, displayed after a supervisor logs in and selects a bus.
+/// It provides access to all major functionalities.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -20,17 +22,19 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+/// The state class for the [HomePage], managing its UI and data.
 class _HomePageState extends State<HomePage> {
   int _seatRequestCount = 0;
   String? _busId;
   final _storage = const FlutterSecureStorage();
   Timer? _timer;
 
+  /// Initializes the state, loads the bus ID, and sets up a periodic timer
+  /// to fetch the seat request count every 10 seconds.
   @override
   void initState() {
     super.initState();
     _loadBusIdAndFetchData();
-    // This timer will call the function to fetch seat requests every 10 seconds.
     _timer = Timer.periodic(const Duration(seconds: 10), (Timer t) {
       if (mounted) {
         _fetchSeatRequestCount();
@@ -38,13 +42,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// Cleans up resources by canceling the timer when the widget is disposed.
   @override
   void dispose() {
-    // It's important to cancel the timer when the widget is removed from the screen.
     _timer?.cancel();
     super.dispose();
   }
 
+  /// Loads the selected bus ID from secure storage and triggers the initial data fetch.
   Future<void> _loadBusIdAndFetchData() async {
     final busId = await _storage.read(key: 'bus_id');
     if (mounted) {
@@ -57,6 +62,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Fetches the number of pending seat requests from the API for the selected bus.
+  /// It updates the UI with the count.
   Future<void> _fetchSeatRequestCount() async {
     if (_busId == null) {
       if (mounted) setState(() => _seatRequestCount = 0);
@@ -86,6 +93,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Builds the user interface for the home page.
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
@@ -174,6 +182,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the 'Start Bus' / 'Manage Bus' button, which changes based on the journey state.
   Widget _buildStartBusButton(AppState appState) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -221,6 +230,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the 'Seat Management' button, which navigates to the seat management page.
   Widget _buildSeatManagementButton() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -257,6 +267,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the 'Seat Request' button, which includes a badge to show the number of pending requests.
   Widget _buildSeatRequestButton() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -311,6 +322,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the 'Inbox' button, which navigates to the inbox page.
   Widget _buildInboxButton() {
     return Column(
       mainAxisSize: MainAxisSize.min,
