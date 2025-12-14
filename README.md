@@ -27,6 +27,9 @@ Our supervisor app.
 6.  **Manage Bus/Journey Page:**
     *   **Functionality:** Allows the supervisor to end the bus's journey, add boarding point, including updating its live location.
 
+For installation - first install flutter, then use 'flutter pub get' to get all dependencies and then use 'flutter run' to run the app.
+
+## Dependencies
 
 
 * [flutter](https://flutter.dev/)
