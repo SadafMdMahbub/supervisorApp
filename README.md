@@ -29,9 +29,33 @@ Our supervisor app.
 
 For installation - first install flutter, then use 'flutter pub get' to get all dependencies and then use 'flutter run' to run the app.
 
-## Dependencies
+## Project Structure
+```
+supervisor/
+├── android/                  # Android specific files
+├── assets/                   # Lottie animations and other assets
+├── lib/                      # Main application source code
+│   ├── homepageButtonsAction/  # UI and logic for homepage button actions
+│   │   ├── account.dart
+│   │   ├── addBoardingpoint.dart
+│   │   ├── inbox.dart
+│   │   ├── managebus.dart
+│   │   ├── managebus2.dart
+│   │   ├── seatManagement.dart
+│   │   └── seatRequest.dart
+│   ├── main.dart               # App entry point
+│   ├── login.dart              # Login screen
+│   ├── selectbus.dart          # Bus selection screen
+│   ├── homepage.dart           # Main dashboard
+│   ├── appstate.dart           # Global app state management
+│   ├── api_config.dart         # API endpoint configuration
+│   ├── location_tracker.dart   # Background location tracking
+│   └── splash_screen.dart      # Splash screen
+├── pubspec.yaml              # Project dependencies
+└── README.md                 # This file
+```
 
-
+## Dependencies for this code
 * [flutter](https://flutter.dev/)
 * [lottie](https://pub.dev/packages/lottie)
 * [http](https://pub.dev/packages/http)
